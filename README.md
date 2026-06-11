@@ -1,10 +1,10 @@
-# EG Trainer — 二阶EG法公式训练工具
+# EG-Trainer — 二阶EG法公式训练工具
 
 针对 2x2 魔方 EG (Erik-Gunnar) 解法的专项公式训练器，支持 **EG-0 (CLL)** 、 **EG-1** 、 **EG-2** 三套公式体系，共 114 条公式。
 
 ## 在线使用
 
-👉 **[somepapers.github.io/eg1-trainer/trainer.html](https://somepapers.github.io/eg1-trainer/trainer.html)**
+👉 **[somepapers.github.io/EG-Trainer/trainer.html](https://somepapers.github.io/EG-Trainer/trainer.html)**
 
 ## 本地使用
 
