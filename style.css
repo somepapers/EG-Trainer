@@ -1,0 +1,383 @@
+/* ============================================
+   EG Trainer — 二阶EG法公式训练工具
+   ============================================ */
+
+/* === Reset & Base === */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+               "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  text-align: center;
+  background: #0d1117;
+  color: #e6edf3;
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* === Home Page === */
+.home-container {
+  max-width: 480px;
+  margin: 80px auto 0;
+  padding: 20px;
+}
+
+.home-container h1 {
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+  background: linear-gradient(135deg, #e74c3c, #3498db);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.home-container .subtitle {
+  color: #8b949e;
+  font-size: 15px;
+  margin-bottom: 48px;
+}
+
+.home-btn {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  padding: 20px 24px;
+  margin: 0 auto 18px;
+  font-size: 20px;
+  font-weight: 600;
+  border: 1px solid;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.home-btn .btn-icon {
+  font-size: 28px;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.home-btn .btn-label {
+  display: block;
+  font-size: 20px;
+}
+
+.home-btn .btn-desc {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+  margin-top: 2px;
+  opacity: 0.8;
+}
+
+.home-btn.eg0 {
+  background: linear-gradient(135deg, #c0392b, #e74c3c);
+  color: #fff;
+  border-color: #e74c3c;
+}
+.home-btn.eg0:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(231,76,60,0.35); }
+
+.home-btn.eg1 {
+  background: linear-gradient(135deg, #2471a3, #3498db);
+  color: #fff;
+  border-color: #3498db;
+}
+.home-btn.eg1:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(52,152,219,0.35); }
+
+.home-btn.eg2 {
+  background: #21262d;
+  color: #484f58;
+  border-color: #30363d;
+  cursor: not-allowed;
+}
+.home-btn.eg2 .btn-tag {
+  display: inline-block;
+  background: #30363d;
+  color: #8b949e;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.home-footer {
+  margin-top: 50px;
+  color: #484f58;
+  font-size: 12px;
+}
+
+/* === Navbar === */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 20px;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+  flex-wrap: wrap;
+}
+
+.navbar .btn-back {
+  background: none;
+  color: #8b949e;
+  font-size: 14px;
+  padding: 6px 14px;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+.navbar .btn-back:hover { color: #e6edf3; border-color: #58a6ff; }
+
+.navbar .nav-btn {
+  background: #21262d;
+  color: #c9d1d9;
+  font-size: 15px;
+  padding: 8px 22px;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.navbar .nav-btn:hover { background: #30363d; }
+.navbar .nav-btn.active {
+  background: #1f6feb;
+  border-color: #1f6feb;
+  color: #fff;
+  font-weight: 600;
+}
+
+.navbar .mode-badge {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 12px;
+  margin-left: 8px;
+}
+.navbar .mode-badge.eg0-badge { background: #e74c3c33; color: #f87171; border: 1px solid #e74c3c55; }
+.navbar .mode-badge.eg1-badge { background: #3498db33; color: #60a5fa; border: 1px solid #3498db55; }
+
+/* === Main Content === */
+.main-content {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 30px 20px;
+}
+
+/* === Case Checkboxes === */
+.casebox {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.casebox label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.15s;
+  user-select: none;
+}
+.casebox label:hover { background: #30363d; border-color: #58a6ff; }
+.casebox label:has(input:checked) {
+  background: #1f6feb22;
+  border-color: #1f6feb;
+  color: #58a6ff;
+}
+.casebox input[type="checkbox"] {
+  accent-color: #1f6feb;
+  width: 16px;
+  height: 16px;
+}
+
+/* === Scramble Display === */
+.scramble-card {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+#shape {
+  font-size: 15px;
+  color: #8b949e;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+#scramble {
+  font-size: 26px;
+  font-weight: 700;
+  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  letter-spacing: 2px;
+  color: #e6edf3;
+  word-break: break-all;
+  line-height: 1.5;
+}
+
+/* === Buttons === */
+.btn-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.btn {
+  padding: 10px 22px;
+  font-size: 15px;
+  font-weight: 600;
+  border: 1px solid #30363d;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-secondary {
+  background: #21262d;
+  color: #c9d1d9;
+}
+.btn-secondary:hover { background: #30363d; border-color: #58a6ff; }
+
+.btn-correct {
+  background: linear-gradient(135deg, #1a7f37, #238636);
+  color: #fff;
+  border-color: #238636;
+  font-size: 17px;
+  padding: 12px 36px;
+}
+.btn-correct:hover { box-shadow: 0 4px 15px rgba(35,134,54,0.35); transform: translateY(-1px); }
+
+.btn-wrong {
+  background: linear-gradient(135deg, #b62324, #da3633);
+  color: #fff;
+  border-color: #da3633;
+  font-size: 17px;
+  padding: 12px 36px;
+}
+.btn-wrong:hover { box-shadow: 0 4px 15px rgba(218,54,51,0.35); transform: translateY(-1px); }
+
+/* === Result Display === */
+#result {
+  font-size: 22px;
+  margin: 20px 0;
+  white-space: pre-line;
+  min-height: 30px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.result-success { color: #3fb950; }
+.result-fail { color: #f85149; }
+
+/* === Stats Page === */
+.stats-container {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+table {
+  width: 100%;
+  margin: 20px auto;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+td, th {
+  border: 1px solid #30363d;
+  padding: 10px 14px;
+}
+
+th {
+  background: #161b22;
+  color: #8b949e;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+td { color: #c9d1d9; }
+
+tr:hover td { background: #161b22; }
+
+.percent { color: #3fb950; font-weight: 600; }
+
+.btn-reset {
+  background: #21262d;
+  color: #f85149;
+  border-color: #f8514933;
+  padding: 8px 20px;
+  font-size: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-reset:hover { background: #f8514922; border-color: #f85149; }
+
+/* === Help Text === */
+.help-text {
+  margin-top: 28px;
+  color: #484f58;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.help-text a { color: #58a6ff; text-decoration: none; }
+.help-text a:hover { text-decoration: underline; }
+
+/* === Animations === */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeIn 0.3s ease; }
+
+@keyframes pulse {
+  0%,100% { transform: scale(1); }
+  50%     { transform: scale(1.05); }
+}
+.pulse { animation: pulse 0.4s ease; }
+
+/* === Utility === */
+.hidden { display: none !important; }
+
+/* === Responsive === */
+@media (max-width: 480px) {
+  .home-container { margin-top: 40px; padding: 16px; }
+  .home-container h1 { font-size: 32px; }
+  .home-btn { padding: 16px 20px; font-size: 18px; }
+
+  .navbar { padding: 10px 12px; gap: 6px; }
+  .navbar .nav-btn { font-size: 14px; padding: 6px 14px; }
+
+  #scramble { font-size: 22px; }
+
+  .btn-correct, .btn-wrong { padding: 10px 24px; font-size: 15px; }
+
+  .casebox label { padding: 6px 10px; font-size: 14px; }
+
+  table { font-size: 13px; }
+  td, th { padding: 7px 8px; }
+}
+
+@media (max-width: 360px) {
+  #scramble { font-size: 18px; letter-spacing: 1px; }
+  .btn-correct, .btn-wrong { padding: 10px 18px; }
+}
