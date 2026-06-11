@@ -89,21 +89,11 @@ body {
 .home-btn.eg1:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(52,152,219,0.35); }
 
 .home-btn.eg2 {
-  background: #21262d;
-  color: #484f58;
-  border-color: #30363d;
-  cursor: not-allowed;
+  background: linear-gradient(135deg, #1b7c3d, #2ea043);
+  color: #fff;
+  border-color: #2ea043;
 }
-.home-btn.eg2 .btn-tag {
-  display: inline-block;
-  background: #30363d;
-  color: #8b949e;
-  padding: 2px 10px;
-  border-radius: 10px;
-  font-size: 11px;
-  font-weight: 600;
-  margin-top: 4px;
-}
+.home-btn.eg2:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(46,160,67,0.35); }
 
 .home-footer {
   margin-top: 50px;
@@ -161,6 +151,7 @@ body {
 }
 .navbar .mode-badge.eg0-badge { background: #e74c3c33; color: #f87171; border: 1px solid #e74c3c55; }
 .navbar .mode-badge.eg1-badge { background: #3498db33; color: #60a5fa; border: 1px solid #3498db55; }
+.navbar .mode-badge.eg2-badge { background: #2ea04333; color: #7ee787; border: 1px solid #2ea04355; }
 
 /* === Main Content === */
 .main-content {

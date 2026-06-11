@@ -26,11 +26,10 @@
       <span class="btn-desc">底层邻角换 · 40条</span>
     </button>
 
-    <button class="home-btn eg2" disabled>
-      <span class="btn-icon">⚫</span>
+    <button class="home-btn eg2" onclick="startTraining('EG2')">
+      <span class="btn-icon">🟢</span>
       <span class="btn-label">EG-2</span>
-      <span class="btn-desc">底层对角换</span>
-      <span class="btn-tag">敬请期待</span>
+      <span class="btn-desc">底层对角换 · 34条</span>
     </button>
 
     <p class="home-footer">公式提供 2011CAOS01 · 快捷键 ← → 空格 C</p>
@@ -53,15 +52,7 @@
     <div id="trainPage" class="fade-in">
       <h2 id="titleTrain">EG Training</h2>
 
-      <div class="casebox" id="casebox">
-        <label><input type="checkbox" checked value="H" onchange="nextScramble()">H</label>
-        <label><input type="checkbox" checked value="Pi" onchange="nextScramble()">Pi</label>
-        <label><input type="checkbox" checked value="T" onchange="nextScramble()">T</label>
-        <label><input type="checkbox" checked value="L" onchange="nextScramble()">L</label>
-        <label><input type="checkbox" checked value="U" onchange="nextScramble()">U</label>
-        <label><input type="checkbox" checked value="S" onchange="nextScramble()">S</label>
-        <label><input type="checkbox" checked value="AS" onchange="nextScramble()">AS</label>
-      </div>
+      <div class="casebox" id="casebox"></div>
 
       <div class="scramble-card">
         <div id="shape"></div>

@@ -226,13 +226,112 @@ EG1: {
     {name:"AS5",algs:["F' R' F R U R U R' U' R U R'","R U F' R U R2 U' R U R'","R U R' U2 R' F' R F R' F R"]},
     {name:"AS6",algs:["R U R' F' U' R U R' U' R U R'"]}
   ]
+},
+
+EG2: {
+  // EG-2: 底层对角交换, 5组34条公式
+  S_show_correct: [
+    "F U' R2 U' R' U2 R U' R2 F'",
+    "R U R' U R U2 R B2 R2",
+    "R U' R' F R F' R' F2 R2",
+    "F R' F' R U2 R U2 R B2 R2'",
+    "L' U2 L U2 L F' L' F R2 B2",
+    "R2 B2 R' U' L' U R' U' L"
+  ],
+  AS_show_correct: [
+    "R' U R U' R2 F R F' R U R' U' R' F2 R2",
+    "R' U' R U R' U2 R' F2 R2",
+    "L' U L F' R U R B2 R2'",
+    "F' L F L' U2 R' F2 R' F2 R2",
+    "R U2 R' U2 R' F R F R2 B2",
+    "R2 F2 R F R F' R U R'"
+  ],
+  Pi_show_correct: [
+    "F U' R U2 R U' R' U R' F'",
+    "R' U2' R2 U' R' F2 R2 F'",
+    "R' F' U R' F R2 U2 R' U R",
+    "R' F U R U' R' F2 U2' R",
+    "R' U' R' F2 R2 U R' F2 R",
+    "R' U2 R U R2 F2 R F R"
+  ],
+  U_show_correct: [
+    "R' U R' F U' R U R' U R2",
+    "F U R U2 R U R' U2 R' U F'",
+    "F R U R' U' F R2 F2",
+    "R' U F R F' R U R F2 R2",
+    "R U R' U' R B2 R' U R U' R'",
+    "R2' F2 R U R U2' R2' F R F' R",
+    "R U' R' U2 L U L' U2 R' U R'",
+    "R2 B2 R U R' U R' F R F",
+    "L' U L U2 R' U' R U2 L' U L",
+    "R2' F2 R F' R U L F' L' F"
+  ],
+  L_show_correct: [
+    "R2 B2 R2 F R' F' R U R' F'",
+    "R2 B2 R2' F R U R' F'",
+    "R' U' F2 R U2 R' U2 F R",
+    "R' U R U' R' F R U R' F'",
+    "F R' F' R U R' F",
+    "F' R U R' F"
+  ],
+  S_cases: [
+    {name:"S1",algs:["F U' R2 U' R' U2 R U' R2 F'"]},
+    {name:"S2",algs:["R U R' U R U2 R B2 R2"]},
+    {name:"S3",algs:["R U' R' F R F' R' F2 R2"]},
+    {name:"S4",algs:["F R' F' R U2 R U2 R B2 R2'"]},
+    {name:"S5",algs:["L' U2 L U2 L F' L' F R2 B2"]},
+    {name:"S6",algs:["R2 B2 R' U' L' U R' U' L"]}
+  ],
+  AS_cases: [
+    {name:"AS1",algs:["R' U R U' R2 F R F' R U R' U' R' F2 R2"]},
+    {name:"AS2",algs:["R' U' R U R' U2 R' F2 R2"]},
+    {name:"AS3",algs:["L' U L F' R U R B2 R2'"]},
+    {name:"AS4",algs:["F' L F L' U2 R' F2 R' F2 R2"]},
+    {name:"AS5",algs:["R U2 R' U2 R' F R F R2 B2"]},
+    {name:"AS6",algs:["R2 F2 R F R F' R U R'"]}
+  ],
+  Pi_cases: [
+    {name:"Pi1",algs:["F U' R U2 R U' R' U R' F'"]},
+    {name:"Pi2",algs:["R' U2' R2 U' R' F2 R2 F'"]},
+    {name:"Pi3",algs:["R' F' U R' F R2 U2 R' U R"]},
+    {name:"Pi4",algs:["R' F U R U' R' F2 U2' R"]},
+    {name:"Pi5",algs:["R' U' R' F2 R2 U R' F2 R"]},
+    {name:"Pi6",algs:["R' U2 R U R2 F2 R F R"]}
+  ],
+  U_cases: [
+    {name:"U1",algs:["R' U R' F U' R U R' U R2"]},
+    {name:"U2",algs:["F U R U2 R U R' U2 R' U F'"]},
+    {name:"U3",algs:["F R U R' U' F R2 F2"]},
+    {name:"U4",algs:["R' U F R F' R U R F2 R2"]},
+    {name:"U5",algs:["R U R' U' R B2 R' U R U' R'"]},
+    {name:"U6",algs:["R2' F2 R U R U2' R2' F R F' R"]},
+    {name:"U7",algs:["R U' R' U2 L U L' U2 R' U R'"]},
+    {name:"U8",algs:["R2 B2 R U R' U R' F R F"]},
+    {name:"U9",algs:["L' U L U2 R' U' R U2 L' U L"]},
+    {name:"U10",algs:["R2' F2 R F' R U L F' L' F"]}
+  ],
+  L_cases: [
+    {name:"L1",algs:["R2 B2 R2 F R' F' R U R' F'"]},
+    {name:"L2",algs:["R2 B2 R2' F R U R' F'"]},
+    {name:"L3",algs:["R' U' F2 R U2 R' U2 F R"]},
+    {name:"L4",algs:["R' U R U' R' F R U R' F'"]},
+    {name:"L5",algs:["F R' F' R U R' F"]},
+    {name:"L6",algs:["F' R U R' F"]}
+  ]
 }
 
 };
 
+// ==================== 模式配置 ====================
+const MODE_CASE_KEYS = {
+  EG0: ["H","Pi","T","L","U","S","AS"],
+  EG1: ["H","Pi","T","L","U","S","AS"],
+  EG2: ["S","AS","Pi","U","L"]
+};
+
 // ==================== 运行时状态 ====================
 let currentMode = "";
-const CASE_KEYS = ["H","Pi","T","L","U","S","AS"];
+function caseKeys() { return MODE_CASE_KEYS[currentMode] || []; }
 
 let statsCase = {};
 let lastHCase = "", lastPiCase = "", lastTCase = "", lastLCase = "";
@@ -257,7 +356,7 @@ function percent(c, w) {
 
 function initStats() {
   statsCase = {};
-  CASE_KEYS.forEach(c => statsCase[c] = { correct: 0, wrong: 0 });
+  caseKeys().forEach(c => statsCase[c] = { correct: 0, wrong: 0 });
 }
 
 /** 获取当前模式的数据 */
@@ -275,8 +374,11 @@ function startTraining(mode) {
   document.getElementById("titleTrain").textContent = mode + " Training";
   document.getElementById("titleStats").textContent = mode + " Case统计";
 
-  // 重置所有 checkbox 为选中
-  document.querySelectorAll("#casebox input[type=checkbox]").forEach(b => b.checked = true);
+  // 动态生成case勾选框
+  const casebox = document.getElementById("casebox");
+  casebox.innerHTML = caseKeys().map(k =>
+    `<label><input type="checkbox" checked value="${k}" onchange="nextScramble()">${k}</label>`
+  ).join("");
 
   loadStats();
   updateStats();
@@ -415,7 +517,7 @@ function copyScramble() {
 // ==================== 统计 ====================
 function updateStats() {
   let html = "";
-  for (const c of CASE_KEYS) {
+  for (const c of caseKeys()) {
     const d = statsCase[c];
     html += `<tr>
       <td><strong>${c}</strong></td>
@@ -435,6 +537,10 @@ function loadStats() {
   const raw = localStorage.getItem(statsKey());
   if (raw) {
     statsCase = JSON.parse(raw);
+    // 确保当前模式的所有key都存在（兼容旧数据）
+    caseKeys().forEach(c => {
+      if (!statsCase[c]) statsCase[c] = { correct: 0, wrong: 0 };
+    });
   } else {
     initStats();
   }
