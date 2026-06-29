@@ -829,10 +829,12 @@ function showTimerTab(n) {
 
 // ---- 罚时按钮 ----
 function hidePenaltyButtons() {
-  document.getElementById("penaltyRow").classList.add("hidden");
+  const el = document.getElementById("penaltyRow");
+  if (el) el.classList.add("hidden");
 }
 function showPenaltyButtons() {
-  document.getElementById("penaltyRow").classList.remove("hidden");
+  const el = document.getElementById("penaltyRow");
+  if (el) el.classList.remove("hidden");
 }
 
 function highlightPenalty() {
