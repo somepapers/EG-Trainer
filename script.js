@@ -431,7 +431,195 @@ function showPage(n) {
   document.getElementById("navStats").classList.toggle("active", n === 2);
 }
 
-// ==================== 训练核心逻辑 ====================
+// ==================== 设置 ====================
+let appSettings = { autoAdvanceDelay: 2500, showKeyboardHints: true };
+
+function loadSettings() {
+  const raw = localStorage.getItem("eg_settings");
+  if (raw) {
+    try { appSettings = JSON.parse(raw); } catch(e) {}
+  }
+  // Ensure defaults
+  if (appSettings.autoAdvanceDelay === undefined) appSettings.autoAdvanceDelay = 2500;
+  if (appSettings.showKeyboardHints === undefined) appSettings.showKeyboardHints = true;
+}
+
+function saveSettings() {
+  appSettings.autoAdvanceDelay = parseInt(document.getElementById("settingAdvanceDelay").value);
+  appSettings.showKeyboardHints = document.getElementById("settingKeyboardHints").checked;
+  localStorage.setItem("eg_settings", JSON.stringify(appSettings));
+  applySettings();
+}
+
+function applySettings() {
+  // Keyboard hints visibility
+  const hints = document.querySelectorAll(".help-text");
+  hints.forEach(function(el) {
+    el.style.display = appSettings.showKeyboardHints ? "" : "none";
+  });
+  const timerHint = document.getElementById("timerHint");
+  if (timerHint) {
+    timerHint.style.display = appSettings.showKeyboardHints ? "" : "none";
+  }
+}
+
+function openSettings() {
+  stopTimerIfRunning();
+  // Record which page we're coming from
+  if (!document.getElementById("page0").classList.contains("hidden")) lastPageBeforeSettings = "page0";
+  else if (!document.getElementById("page1").classList.contains("hidden")) lastPageBeforeSettings = "page1";
+  else if (!document.getElementById("page2").classList.contains("hidden")) lastPageBeforeSettings = "page2";
+  else if (!document.getElementById("page3").classList.contains("hidden")) lastPageBeforeSettings = "page3";
+  else lastPageBeforeSettings = "page0";
+
+  document.getElementById("page0").classList.add("hidden");
+  document.getElementById("page1").classList.add("hidden");
+  document.getElementById("page2").classList.add("hidden");
+  document.getElementById("page3").classList.add("hidden");
+  document.getElementById("page4").classList.remove("hidden");
+
+  loadSettings();
+  document.getElementById("settingAdvanceDelay").value = appSettings.autoAdvanceDelay;
+  document.getElementById("settingKeyboardHints").checked = appSettings.showKeyboardHints;
+}
+
+/** Returns to whichever page the user came from (or home) */
+let lastPageBeforeSettings = "";
+function closeSettings() {
+  document.getElementById("page4").classList.add("hidden");
+  if (lastPageBeforeSettings) {
+    // Restore the page we came from
+    if (lastPageBeforeSettings === "page0") {
+      document.getElementById("page0").classList.remove("hidden");
+    } else if (lastPageBeforeSettings === "page1") {
+      document.getElementById("page1").classList.remove("hidden");
+    } else if (lastPageBeforeSettings === "page2") {
+      document.getElementById("page2").classList.remove("hidden");
+    } else if (lastPageBeforeSettings === "page3") {
+      document.getElementById("page3").classList.remove("hidden");
+    }
+  } else {
+    document.getElementById("page0").classList.remove("hidden");
+  }
+  document.getElementById("importStatus").textContent = "";
+  document.getElementById("importStatus").className = "";
+}
+
+// ==================== 数据导出 ====================
+/** Collect all EG-Trainer data from localStorage */
+function collectAllData() {
+  var data = {};
+  var keys = ["eg0_case", "eg1_case", "eg2_case", "eg_timer_records", "eg_preinspect_stats", "eg_settings"];
+  keys.forEach(function(k) {
+    var raw = localStorage.getItem(k);
+    if (raw) {
+      try { data[k] = JSON.parse(raw); } catch(e) { data[k] = raw; }
+    }
+  });
+  return data;
+}
+
+function exportData() {
+  var pack = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    data: collectAllData()
+  };
+
+  var json = JSON.stringify(pack, null, 2);
+  var blob = new Blob([json], { type: "application/json" });
+  var url = URL.createObjectURL(blob);
+
+  var a = document.createElement("a");
+  a.href = url;
+
+  // Filename with date
+  var d = new Date();
+  var ds = d.getFullYear() + "-" +
+    String(d.getMonth() + 1).padStart(2, "0") + "-" +
+    String(d.getDate()).padStart(2, "0");
+  a.download = "EG-Trainer_backup_" + ds + ".json";
+
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  var statusEl = document.getElementById("importStatus");
+  statusEl.textContent = "✓ 导出成功！";
+  statusEl.className = "success";
+  setTimeout(function() {
+    statusEl.textContent = "";
+    statusEl.className = "";
+  }, 2500);
+}
+
+// ==================== 数据导入 ====================
+function importData(fileInput) {
+  var statusEl = document.getElementById("importStatus");
+  var file = fileInput.files[0];
+  if (!file) return;
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var pack = JSON.parse(e.target.result);
+
+      // Validate structure
+      if (!pack.data || typeof pack.data !== "object") {
+        throw new Error("文件格式无效：缺少 data 字段");
+      }
+
+      var data = pack.data;
+      var validKeys = ["eg0_case", "eg1_case", "eg2_case", "eg_timer_records", "eg_preinspect_stats", "eg_settings"];
+      var imported = 0;
+
+      validKeys.forEach(function(k) {
+        if (data[k] !== undefined) {
+          localStorage.setItem(k, JSON.stringify(data[k]));
+          imported++;
+        }
+      });
+
+      if (imported === 0) {
+        throw new Error("文件中没有可识别的 EG-Trainer 数据");
+      }
+
+      statusEl.textContent = "✓ 导入成功！已恢复 " + imported + " 项数据。";
+      statusEl.className = "success";
+
+      // If currently in a training mode, reload stats
+      if (currentMode && !document.getElementById("page1").classList.contains("hidden")) {
+        loadStats();
+        updateStats();
+      }
+      // If timer page is active, reload timer records
+      if (!document.getElementById("page2").classList.contains("hidden")) {
+        loadTimerRecords();
+        updateTimerStats();
+        updateTimeList();
+      }
+      // Reload PI stats
+      if (!document.getElementById("page3").classList.contains("hidden")) {
+        loadPIStats();
+        updatePIDisplay();
+      }
+
+    } catch(err) {
+      statusEl.textContent = "✗ 导入失败：" + err.message;
+      statusEl.className = "error";
+    }
+  };
+
+  reader.onerror = function() {
+    statusEl.textContent = "✗ 文件读取失败";
+    statusEl.className = "error";
+  };
+
+  reader.readAsText(file);
+  // Reset file input so the same file can be re-selected
+  fileInput.value = "";
+}
 function getSelectedCases() {
   return Array.from(
     document.getElementById("casebox").querySelectorAll("input:checked")
@@ -499,7 +687,10 @@ function correct() {
   saveStats();
   setResult("蒸蚌 ✨", "result-success pulse");
   updateStats();
-  setTimeout(nextScramble, 2500);
+  var delay = appSettings.autoAdvanceDelay;
+  if (delay > 0) {
+    setTimeout(nextScramble, delay);
+  }
 }
 
 function wrong() {
@@ -1111,12 +1302,26 @@ function resetPI() {
   document.getElementById("piResult").className = "";
 }
 
+// ==================== 初始化设置 ====================
+loadSettings();
+applySettings();
+
 // ==================== 键盘快捷键（页面感知） ====================
 document.addEventListener("keydown", function (e) {
   const page0Visible = !document.getElementById("page0").classList.contains("hidden");
   const page1Visible = !document.getElementById("page1").classList.contains("hidden");
   const page2Visible = !document.getElementById("page2").classList.contains("hidden");
   const page3Visible = !document.getElementById("page3").classList.contains("hidden");
+  const page4Visible = !document.getElementById("page4").classList.contains("hidden");
+
+  // 设置页 (page4)：Esc 或 ← 返回
+  if (page4Visible) {
+    if (e.key === "Escape" || e.key === "ArrowLeft") {
+      e.preventDefault();
+      closeSettings();
+    }
+    return;
+  }
 
   // 首页：无快捷键（允许空格翻页）
   if (page0Visible) return;
