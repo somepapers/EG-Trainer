@@ -669,6 +669,17 @@ function setDNF() {
   finishRecord();
 }
 
+/** 键盘左右键循环切换罚时选项 */
+function cyclePenalty(direction) {
+  // direction: 1 = 右箭头, -1 = 左箭头
+  // 罚时顺序: 无罚时(0) → +2(2000) → DNF(-1) → 无罚时(0) ...
+  const options = [0, 2000, -1];
+  const idx = options.indexOf(currentPenalty);
+  const newIdx = (idx + direction + options.length) % options.length;
+  currentPenalty = options[newIdx];
+  highlightPenalty();
+}
+
 function finishRecord() {
   recordTime(timerElapsed);
   hidePenaltyButtons();
@@ -730,7 +741,7 @@ function updateTimerHint() {
       hint.textContent = "计时中... 按空格键停止";
       break;
     case 'judging':
-      hint.textContent = "请选择罚时：无罚时 / +2 / DNF";
+      hint.textContent = "请选择罚时：← → 切换选项 · Enter 确认 · 无罚时 / +2 / DNF";
       break;
     case 'stopped':
       hint.textContent = "按空格键开始下一次";
@@ -1073,6 +1084,17 @@ document.addEventListener("keydown", function (e) {
     if (e.key === " " || e.key === "Spacebar") {
       e.preventDefault();
       timerPress();
+    } else if (timerState === 'judging') {
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        cyclePenalty(1);
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        cyclePenalty(-1);
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        finishRecord();
+      }
     }
   }
 
