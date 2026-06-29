@@ -348,6 +348,33 @@ function invertAlg(alg) {
   }).join(" ");
 }
 
+/** 生成WCA标准的二阶魔方打乱公式（随机步数法） */
+function generateWCAScramble() {
+  const faces = [
+    { name: 'R', axis: 0 },
+    { name: 'U', axis: 1 },
+    { name: 'F', axis: 2 },
+  ];
+  const mods = ['', "'", '2'];
+  const length = 9; // WCA 二阶标准 9 步
+
+  let moves = [];
+  let lastAxis = -1;
+
+  for (let i = 0; i < length; i++) {
+    let f;
+    do {
+      f = faces[Math.floor(Math.random() * faces.length)];
+    } while (f.axis === lastAxis);
+    lastAxis = f.axis;
+
+    let mod = mods[Math.floor(Math.random() * mods.length)];
+    moves.push(f.name + mod);
+  }
+
+  return moves.join(' ');
+}
+
 function percent(c, w) {
   const t = c + w;
   if (t === 0) return "0%";
@@ -367,6 +394,8 @@ function startTraining(mode) {
   currentMode = mode;
 
   document.getElementById("page0").classList.add("hidden");
+  document.getElementById("page2").classList.add("hidden");
+  document.getElementById("page3").classList.add("hidden");
   document.getElementById("page1").classList.remove("hidden");
 
   document.getElementById("modeLabel").textContent = mode + " 模式";
@@ -388,8 +417,11 @@ function startTraining(mode) {
 
 function goHome() {
   document.getElementById("page1").classList.add("hidden");
+  document.getElementById("page2").classList.add("hidden");
+  document.getElementById("page3").classList.add("hidden");
   document.getElementById("page0").classList.remove("hidden");
   currentMode = "";
+  stopTimerIfRunning();
 }
 
 function showPage(n) {
@@ -556,19 +588,514 @@ function statsKey() {
   return currentMode.toLowerCase() + "_case";
 }
 
-// ==================== 键盘快捷键 ====================
+// ==================== 计时器 ====================
+let timerState = 'idle'; // 'idle' | 'ready' | 'inspecting' | 'running' | 'judging' | 'stopped'
+let timerStartTime = 0;
+let timerElapsed = 0;
+let timerInterval = null;
+let timerScramble = '';
+let timerRecords = [];
+let inspectionEnabled = false;
+let inspectionTimeLeft = 15;
+let inspectionInterval = null;
+let currentPenalty = 0; // 0 = 无, 2000 = +2, -1 = DNF
+
+function loadTimerRecords() {
+  const raw = localStorage.getItem("eg_timer_records");
+  if (raw) {
+    try { timerRecords = JSON.parse(raw); } catch(e) { timerRecords = []; }
+  }
+}
+
+function saveTimerRecords() {
+  localStorage.setItem("eg_timer_records", JSON.stringify(timerRecords));
+}
+
+function stopTimerIfRunning() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  if (inspectionInterval) { clearInterval(inspectionInterval); inspectionInterval = null; }
+  hidePenaltyButtons();
+  timerState = 'idle';
+}
+
+function getEffectiveTime(r) {
+  if (r.penalty === -1) return Infinity; // DNF
+  return r.time + (r.penalty || 0);
+}
+
+function toggleInspection() {
+  inspectionEnabled = document.getElementById("inspectCheck").checked;
+  if (timerState === 'idle') updateTimerHint();
+}
+
+// ---- 计时器 Tab 切换 ----
+function showTimerTab(n) {
+  document.getElementById("timerTab1").classList.toggle("hidden", n !== 1);
+  document.getElementById("timerTab2").classList.toggle("hidden", n !== 2);
+  document.getElementById("navTimerTab1").classList.toggle("active", n === 1);
+  document.getElementById("navTimerTab2").classList.toggle("active", n === 2);
+}
+
+// ---- 罚时按钮 ----
+function hidePenaltyButtons() {
+  document.getElementById("penaltyRow").classList.add("hidden");
+}
+function showPenaltyButtons() {
+  document.getElementById("penaltyRow").classList.remove("hidden");
+}
+
+function highlightPenalty() {
+  const btnOK = document.getElementById("btnPenaltyOK");
+  const btnPlus2 = document.getElementById("btnPenaltyPlus2");
+  const btnDNF = document.getElementById("btnPenaltyDNF");
+  btnOK.classList.remove("selected");
+  btnPlus2.classList.remove("selected");
+  btnDNF.classList.remove("selected");
+  if (currentPenalty === -1) btnDNF.classList.add("selected");
+  else if (currentPenalty === 2000) btnPlus2.classList.add("selected");
+  else btnOK.classList.add("selected");
+}
+
+function setNoPenalty() {
+  currentPenalty = 0;
+  finishRecord();
+}
+function setPlus2() {
+  currentPenalty = 2000;
+  finishRecord();
+}
+function setDNF() {
+  currentPenalty = -1;
+  finishRecord();
+}
+
+function finishRecord() {
+  recordTime(timerElapsed);
+  hidePenaltyButtons();
+  timerState = 'stopped';
+  document.getElementById("timerDisplay").className = "timer-display stopped";
+  timerElapsed = 0;
+  document.getElementById("timerTime").textContent = formatTime(timerRecords[0].time);
+  if (timerRecords[0].penalty === -1) {
+    document.getElementById("timerTime").textContent = "DNF";
+  } else if (timerRecords[0].penalty) {
+    document.getElementById("timerTime").textContent = formatTime(getEffectiveTime(timerRecords[0]));
+  }
+  updateTimerHint();
+  updateTimerStats();
+  updateTimeList();
+}
+
+// ---- 启动计时器页面 ----
+function startTimer() {
+  currentMode = "";
+  stopTimerIfRunning();
+  document.getElementById("page0").classList.add("hidden");
+  document.getElementById("page1").classList.add("hidden");
+  document.getElementById("page3").classList.add("hidden");
+  document.getElementById("page2").classList.remove("hidden");
+
+  loadTimerRecords();
+  timerScramble = generateWCAScramble();
+  timerState = 'idle';
+  timerElapsed = 0;
+  inspectionEnabled = false;
+  currentPenalty = 0;
+  document.getElementById("inspectCheck").checked = false;
+  document.getElementById("timerScramble").textContent = timerScramble;
+  document.getElementById("timerTime").textContent = "0.00";
+  document.getElementById("timerDisplay").className = "timer-display";
+  showTimerTab(1);
+  hidePenaltyButtons();
+  updateTimerHint();
+  updateTimerStats();
+  updateTimeList();
+}
+
+function updateTimerHint() {
+  const hint = document.getElementById("timerHint");
+  switch (timerState) {
+    case 'idle':
+      hint.textContent = inspectionEnabled
+        ? "按空格键开始15秒观察，准备好后按住空格再松开计时"
+        : "按住空格键准备，松开开始计时";
+      break;
+    case 'ready':
+      hint.textContent = "松开空格键开始计时！";
+      break;
+    case 'inspecting':
+      hint.textContent = "观察中... 准备好后按住空格再松开开始计时";
+      break;
+    case 'running':
+      hint.textContent = "计时中... 按空格键停止";
+      break;
+    case 'judging':
+      hint.textContent = "请选择罚时：无罚时 / +2 / DNF";
+      break;
+    case 'stopped':
+      hint.textContent = "按空格键开始下一次";
+      break;
+  }
+}
+
+// ---- 按压 / 松开 事件 ----
+function timerPress() {
+  if (timerState === 'idle') {
+    if (inspectionEnabled) {
+      document.getElementById("timerDisplay").className = "timer-display ready";
+    } else {
+      timerState = 'ready';
+      timerElapsed = 0;
+      currentPenalty = 0;
+      document.getElementById("timerTime").textContent = "0.00";
+      document.getElementById("timerDisplay").className = "timer-display ready";
+      updateTimerHint();
+    }
+  } else if (timerState === 'inspecting') {
+    clearInterval(inspectionInterval);
+    inspectionInterval = null;
+    timerState = 'ready';
+    timerElapsed = 0;
+    document.getElementById("timerTime").textContent = "0.00";
+    document.getElementById("timerDisplay").className = "timer-display ready";
+    updateTimerHint();
+  } else if (timerState === 'running') {
+    // 停止计时 → 进入判罚
+    timerState = 'judging';
+    clearInterval(timerInterval);
+    timerInterval = null;
+    timerElapsed = performance.now() - timerStartTime;
+    document.getElementById("timerTime").textContent = formatTime(timerElapsed);
+    document.getElementById("timerDisplay").className = "timer-display stopped";
+    highlightPenalty();
+    showPenaltyButtons();
+    updateTimerHint();
+  } else if (timerState === 'stopped') {
+    timerScramble = generateWCAScramble();
+    document.getElementById("timerScramble").textContent = timerScramble;
+    timerState = 'idle';
+    timerElapsed = 0;
+    currentPenalty = 0;
+    document.getElementById("timerTime").textContent = "0.00";
+    document.getElementById("timerDisplay").className = "timer-display";
+    updateTimerHint();
+  }
+}
+
+function timerRelease() {
+  if (timerState === 'idle' && inspectionEnabled) {
+    // 松开空格 → 开始15秒观察倒计时
+    timerState = 'inspecting';
+    inspectionTimeLeft = 15;
+    currentPenalty = 0;
+    document.getElementById("timerTime").textContent = inspectionTimeLeft;
+    document.getElementById("timerDisplay").className = "timer-display inspecting";
+    updateTimerHint();
+    inspectionInterval = setInterval(function () {
+      inspectionTimeLeft--;
+      if (inspectionTimeLeft > 0) {
+        // 倒计时：15, 14, ... 1
+        document.getElementById("timerTime").textContent = inspectionTimeLeft;
+      } else if (inspectionTimeLeft === 0) {
+        // 15s 到，+2 罚时阶段 (+1, +2, +3)
+        document.getElementById("timerTime").textContent = "+1";
+        currentPenalty = 2000;
+      } else {
+        // 超时：inspectionTimeLeft = -1(16s), -2(17s), -3(18s)
+        var ot = 1 - inspectionTimeLeft; // 2, 3, 4...
+        var displayOT = Math.min(ot, 3); // 显示 +2 / +3 封顶
+        document.getElementById("timerTime").textContent = "+" + displayOT;
+        if (inspectionTimeLeft <= -3) {
+          // 超过 18s → DNF
+          clearInterval(inspectionInterval);
+          inspectionInterval = null;
+          currentPenalty = -1; // DNF
+          startRunning();
+        }
+      }
+    }, 1000);
+  } else if (timerState === 'ready') {
+    startRunning();
+  }
+}
+
+function timerCancel() {
+  if (timerState === 'ready') {
+    timerState = 'idle';
+    timerElapsed = 0;
+    document.getElementById("timerTime").textContent = "0.00";
+    document.getElementById("timerDisplay").className = "timer-display";
+    updateTimerHint();
+  } else if (timerState === 'inspecting') {
+    clearInterval(inspectionInterval);
+    inspectionInterval = null;
+    timerState = 'idle';
+    inspectionTimeLeft = 15;
+    currentPenalty = 0;
+    document.getElementById("timerTime").textContent = "0.00";
+    document.getElementById("timerDisplay").className = "timer-display";
+    updateTimerHint();
+  } else if (timerState === 'idle' && inspectionEnabled) {
+    document.getElementById("timerDisplay").className = "timer-display";
+  }
+}
+
+function startRunning() {
+  timerState = 'running';
+  timerStartTime = performance.now();
+  timerElapsed = 0;
+  document.getElementById("timerDisplay").className = "timer-display running";
+  hidePenaltyButtons();
+  updateTimerHint();
+  timerInterval = setInterval(updateTimerDisplay, 10);
+  updateTimerDisplay();
+}
+
+function updateTimerDisplay() {
+  if (timerState === 'running') {
+    timerElapsed = performance.now() - timerStartTime;
+  }
+  document.getElementById("timerTime").textContent = formatTime(timerElapsed);
+}
+
+function formatTime(ms) {
+  if (ms === Infinity || ms < 0) return "DNF";
+  var totalSeconds = ms / 1000;
+  if (totalSeconds < 60) {
+    var sec = Math.floor(totalSeconds);
+    var hundredths = Math.floor((ms % 1000) / 10);
+    return sec + '.' + String(hundredths).padStart(2, '0');
+  } else {
+    var min = Math.floor(totalSeconds / 60);
+    var sec = Math.floor(totalSeconds % 60);
+    var hundredths = Math.floor((ms % 1000) / 10);
+    return min + ':' + String(sec).padStart(2, '0') + '.' + String(hundredths).padStart(2, '0');
+  }
+}
+
+function recordTime(ms) {
+  timerRecords.unshift({
+    time: ms,
+    penalty: currentPenalty,
+    scramble: timerScramble,
+    date: Date.now()
+  });
+  if (timerRecords.length > 500) timerRecords.length = 500;
+  saveTimerRecords();
+}
+
+function updateTimerStats() {
+  var bestEl = document.getElementById("statBest");
+  var ao5El = document.getElementById("statAO5");
+  var ao12El = document.getElementById("statAO12");
+
+  if (timerRecords.length === 0) {
+    bestEl.textContent = "—"; ao5El.textContent = "—"; ao12El.textContent = "—";
+    return;
+  }
+
+  // 最佳（排除 DNF）
+  var validTimes = timerRecords.map(function(r) { return getEffectiveTime(r); }).filter(function(t) { return t !== Infinity; });
+  if (validTimes.length > 0) {
+    bestEl.textContent = formatTime(Math.min.apply(null, validTimes));
+  } else {
+    bestEl.textContent = "DNF";
+  }
+
+  // ao5
+  if (timerRecords.length >= 5) {
+    var last5 = timerRecords.slice(0, 5).map(function(r) { return getEffectiveTime(r); });
+    var dnfCount = last5.filter(function(t) { return t === Infinity; }).length;
+    if (dnfCount >= 2) {
+      ao5El.textContent = "DNF";
+    } else {
+      var sorted = last5.slice().sort(function(a, b) { return a - b; });
+      var avg = (sorted[1] + sorted[2] + sorted[3]) / 3;
+      ao5El.textContent = formatTime(Math.round(avg));
+    }
+  } else {
+    ao5El.textContent = "—";
+  }
+
+  // ao12
+  if (timerRecords.length >= 12) {
+    var last12 = timerRecords.slice(0, 12).map(function(r) { return getEffectiveTime(r); });
+    var dnf12 = last12.filter(function(t) { return t === Infinity; }).length;
+    if (dnf12 >= 2) {
+      ao12El.textContent = "DNF";
+    } else {
+      var sorted12 = last12.slice().sort(function(a, b) { return a - b; });
+      var sum = sorted12.slice(1, -1).reduce(function(a, b) { return a + b; }, 0);
+      ao12El.textContent = formatTime(Math.round(sum / 10));
+    }
+  } else {
+    ao12El.textContent = "—";
+  }
+}
+
+function updateTimeList() {
+  var tbody = document.getElementById("timeList");
+  var noTimes = document.getElementById("noTimes");
+
+  if (timerRecords.length === 0) {
+    tbody.innerHTML = "";
+    noTimes.style.display = "block";
+    return;
+  }
+
+  noTimes.style.display = "none";
+  var valid = timerRecords.filter(function(r) { return r.penalty !== -1; });
+  var bestTime = valid.length > 0 ? Math.min.apply(null, valid.map(function(r) { return getEffectiveTime(r); })) : null;
+
+  tbody.innerHTML = timerRecords.map(function(r, i) {
+    var isDNF = r.penalty === -1;
+    var eff = getEffectiveTime(r);
+    var isBest = !isDNF && bestTime !== null && eff === bestTime;
+    var display;
+    if (isDNF) {
+      display = "DNF";
+    } else if (r.penalty) {
+      display = formatTime(eff) + ' <span class="penalty-mark">+2</span>';
+    } else {
+      display = formatTime(eff);
+    }
+    return '<tr class="' + (isBest ? 'best-row' : '') + '">' +
+      '<td>' + (i + 1) + '</td>' +
+      '<td>' + display + '</td>' +
+      '<td title="' + r.scramble + '">' + r.scramble + '</td>' +
+      '</tr>';
+  }).join("");
+}
+
+function resetTimer() {
+  localStorage.removeItem("eg_timer_records");
+  timerRecords = [];
+  updateTimerStats();
+  updateTimeList();
+}
+
+// ==================== 预判练习器 ====================
+let piStats = { correct: 0, wrong: 0 };
+let currentPIScramble = "";
+
+function loadPIStats() {
+  const raw = localStorage.getItem("eg_preinspect_stats");
+  if (raw) {
+    try { piStats = JSON.parse(raw); } catch(e) { piStats = { correct: 0, wrong: 0 }; }
+  }
+}
+
+function savePIStats() {
+  localStorage.setItem("eg_preinspect_stats", JSON.stringify(piStats));
+}
+
+function startPreinspect() {
+  currentMode = "";
+  stopTimerIfRunning();
+  document.getElementById("page0").classList.add("hidden");
+  document.getElementById("page1").classList.add("hidden");
+  document.getElementById("page2").classList.add("hidden");
+  document.getElementById("page3").classList.remove("hidden");
+
+  loadPIStats();
+  currentPIScramble = generateWCAScramble();
+  document.getElementById("piScramble").textContent = currentPIScramble;
+  document.getElementById("piResult").textContent = "";
+  document.getElementById("piResult").className = "";
+  updatePIDisplay();
+}
+
+function piNext() {
+  currentPIScramble = generateWCAScramble();
+  document.getElementById("piScramble").textContent = currentPIScramble;
+  document.getElementById("piResult").textContent = "";
+  document.getElementById("piResult").className = "";
+}
+
+function piCorrect() {
+  piStats.correct++;
+  savePIStats();
+  updatePIDisplay();
+  document.getElementById("piResult").textContent = "蒸蚌 ✨";
+  document.getElementById("piResult").className = "result-success pulse";
+}
+
+function piWrong() {
+  piStats.wrong++;
+  savePIStats();
+  updatePIDisplay();
+  document.getElementById("piResult").textContent = "菜就多练 💪";
+  document.getElementById("piResult").className = "result-fail";
+}
+
+function updatePIDisplay() {
+  document.getElementById("piCorrectCount").textContent = piStats.correct;
+  document.getElementById("piWrongCount").textContent = piStats.wrong;
+  document.getElementById("piRate").textContent = percent(piStats.correct, piStats.wrong);
+}
+
+function resetPI() {
+  localStorage.removeItem("eg_preinspect_stats");
+  piStats = { correct: 0, wrong: 0 };
+  updatePIDisplay();
+  document.getElementById("piResult").textContent = "";
+  document.getElementById("piResult").className = "";
+}
+
+// ==================== 键盘快捷键（页面感知） ====================
 document.addEventListener("keydown", function (e) {
-  if (!currentMode) return;  // 不在训练模式中
-  if (e.key === "ArrowRight" || e.key === "j") {
+  const page0Visible = !document.getElementById("page0").classList.contains("hidden");
+  const page1Visible = !document.getElementById("page1").classList.contains("hidden");
+  const page2Visible = !document.getElementById("page2").classList.contains("hidden");
+  const page3Visible = !document.getElementById("page3").classList.contains("hidden");
+
+  // 首页：无快捷键（允许空格翻页）
+  if (page0Visible) return;
+
+  // 训练页 (page1)：EG 公式训练快捷键
+  if (page1Visible && currentMode) {
+    if (e.key === "ArrowRight" || e.key === "j") {
+      e.preventDefault();
+      correct();
+    } else if (e.key === "ArrowLeft" || e.key === "k") {
+      e.preventDefault();
+      wrong();
+    } else if (e.key === " " || e.key === "Spacebar") {
+      e.preventDefault();
+      nextScramble();
+    } else if (e.key === "c" && !e.ctrlKey && !e.metaKey) {
+      copyScramble();
+    }
+  }
+
+  // 计时器 (page2) — 按下空格：准备/观察/停止/重置
+  if (page2Visible) {
+    if (e.key === " " || e.key === "Spacebar") {
+      e.preventDefault();
+      timerPress();
+    }
+  }
+
+  // 预判练习器 (page3)
+  if (page3Visible) {
+    if (e.key === "ArrowRight" || e.key === "j") {
+      e.preventDefault();
+      piCorrect();
+    } else if (e.key === "ArrowLeft" || e.key === "k") {
+      e.preventDefault();
+      piWrong();
+    } else if (e.key === " " || e.key === "Spacebar") {
+      e.preventDefault();
+      piNext();
+    }
+  }
+});
+
+// 计时器 — 松开空格：开始计时
+document.addEventListener("keyup", function (e) {
+  const page2Visible = !document.getElementById("page2").classList.contains("hidden");
+  if (page2Visible && (e.key === " " || e.key === "Spacebar")) {
     e.preventDefault();
-    correct();
-  } else if (e.key === "ArrowLeft" || e.key === "k") {
-    e.preventDefault();
-    wrong();
-  } else if (e.key === " " || e.key === "Spacebar") {
-    e.preventDefault();
-    nextScramble();
-  } else if (e.key === "c" && !e.ctrlKey && !e.metaKey) {
-    copyScramble();
+    timerRelease();
   }
 });
