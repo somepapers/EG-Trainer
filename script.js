@@ -683,6 +683,9 @@ function cyclePenalty(direction) {
 function finishRecord() {
   recordTime(timerElapsed);
   hidePenaltyButtons();
+  // 确认罚时后立即生成新打乱，保证统计打乱与计时时一致
+  timerScramble = generateWCAScramble();
+  document.getElementById("timerScramble").textContent = timerScramble;
   timerState = 'stopped';
   document.getElementById("timerDisplay").className = "timer-display stopped";
   timerElapsed = 0;
@@ -782,8 +785,7 @@ function timerPress() {
     showPenaltyButtons();
     updateTimerHint();
   } else if (timerState === 'stopped') {
-    timerScramble = generateWCAScramble();
-    document.getElementById("timerScramble").textContent = timerScramble;
+    // 新打乱已在 finishRecord() 中生成，此处仅切换状态
     timerState = 'idle';
     timerElapsed = 0;
     currentPenalty = 0;
@@ -895,53 +897,79 @@ function recordTime(ms) {
   saveTimerRecords();
 }
 
+/** 计算从最近 N 次成绩中去头去尾的均值（当前 aoN），不足 N 次或 DNF>=2 返回 null */
+function computeCurrentAO(records, n) {
+  if (records.length < n) return null;
+  var last = records.slice(0, n).map(function(r) { return getEffectiveTime(r); });
+  var dnfCount = last.filter(function(t) { return t === Infinity; }).length;
+  if (dnfCount >= 2) return null; // DNF
+  var sorted = last.slice().sort(function(a, b) { return a - b; });
+  var sum = sorted.slice(1, -1).reduce(function(a, b) { return a + b; }, 0);
+  return Math.round(sum / (n - 2));
+}
+
+/** 扫描全部记录找最佳滚动 aoN（去头去尾均值），不足 N 次返回 null */
+function computeBestAO(records, n) {
+  if (records.length < n) return null;
+  var best = null;
+  for (var i = 0; i <= records.length - n; i++) {
+    var times = records.slice(i, i + n).map(function(r) { return getEffectiveTime(r); });
+    var dnfCount = times.filter(function(t) { return t === Infinity; }).length;
+    if (dnfCount >= 2) continue;
+    var sorted = times.slice().sort(function(a, b) { return a - b; });
+    var sum = sorted.slice(1, -1).reduce(function(a, b) { return a + b; }, 0);
+    var avg = Math.round(sum / (n - 2));
+    if (best === null || avg < best) best = avg;
+  }
+  return best;
+}
+
+function formatAO(val) {
+  if (val === null) return "—";
+  if (val === Infinity) return "DNF";
+  return formatTime(val);
+}
+
 function updateTimerStats() {
+  var total = timerRecords.length;
+  var validTimes = timerRecords.map(function(r) { return getEffectiveTime(r); }).filter(function(t) { return t !== Infinity; });
+
+  // ---- Tab 1 实时统计 ----
+  var liveBestEl = document.getElementById("liveBest");
+  var liveAO5El = document.getElementById("liveAO5");
+  var liveAO12El = document.getElementById("liveAO12");
+  var liveTotalEl = document.getElementById("liveTotal");
+
+  liveTotalEl.textContent = total;
+
+  if (total === 0) {
+    liveBestEl.textContent = "—";
+    liveAO5El.textContent = "—";
+    liveAO12El.textContent = "—";
+  } else {
+    liveBestEl.textContent = validTimes.length > 0 ? formatTime(Math.min.apply(null, validTimes)) : "DNF";
+    liveAO5El.textContent = formatAO(computeCurrentAO(timerRecords, 5));
+    liveAO12El.textContent = formatAO(computeCurrentAO(timerRecords, 12));
+  }
+
+  // ---- Tab 2 历史最佳统计 ----
   var bestEl = document.getElementById("statBest");
   var ao5El = document.getElementById("statAO5");
   var ao12El = document.getElementById("statAO12");
 
-  if (timerRecords.length === 0) {
-    bestEl.textContent = "—"; ao5El.textContent = "—"; ao12El.textContent = "—";
+  if (total === 0) {
+    bestEl.textContent = "—";
+    ao5El.textContent = "—";
+    ao12El.textContent = "—";
     return;
   }
 
-  // 最佳（排除 DNF）
-  var validTimes = timerRecords.map(function(r) { return getEffectiveTime(r); }).filter(function(t) { return t !== Infinity; });
-  if (validTimes.length > 0) {
-    bestEl.textContent = formatTime(Math.min.apply(null, validTimes));
-  } else {
-    bestEl.textContent = "DNF";
-  }
+  // 最佳单次
+  bestEl.textContent = validTimes.length > 0 ? formatTime(Math.min.apply(null, validTimes)) : "DNF";
 
-  // ao5
-  if (timerRecords.length >= 5) {
-    var last5 = timerRecords.slice(0, 5).map(function(r) { return getEffectiveTime(r); });
-    var dnfCount = last5.filter(function(t) { return t === Infinity; }).length;
-    if (dnfCount >= 2) {
-      ao5El.textContent = "DNF";
-    } else {
-      var sorted = last5.slice().sort(function(a, b) { return a - b; });
-      var avg = (sorted[1] + sorted[2] + sorted[3]) / 3;
-      ao5El.textContent = formatTime(Math.round(avg));
-    }
-  } else {
-    ao5El.textContent = "—";
-  }
-
-  // ao12
-  if (timerRecords.length >= 12) {
-    var last12 = timerRecords.slice(0, 12).map(function(r) { return getEffectiveTime(r); });
-    var dnf12 = last12.filter(function(t) { return t === Infinity; }).length;
-    if (dnf12 >= 2) {
-      ao12El.textContent = "DNF";
-    } else {
-      var sorted12 = last12.slice().sort(function(a, b) { return a - b; });
-      var sum = sorted12.slice(1, -1).reduce(function(a, b) { return a + b; }, 0);
-      ao12El.textContent = formatTime(Math.round(sum / 10));
-    }
-  } else {
-    ao12El.textContent = "—";
-  }
+  // 最佳 ao5 / ao12
+  ao5El.textContent = formatAO(computeBestAO(timerRecords, 5));
+  ao12El.textContent = formatAO(computeBestAO(timerRecords, 12));
 }
 
 function updateTimeList() {

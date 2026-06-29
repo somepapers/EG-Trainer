@@ -122,6 +122,13 @@
       <div id="timerScramble"></div>
     </div>
 
+    <div class="timer-live-stats" id="timerLiveStats">
+      <div class="timer-stat-item">🏆 当前最佳: <strong id="liveBest">—</strong></div>
+      <div class="timer-stat-item">📊 ao5: <strong id="liveAO5">—</strong></div>
+      <div class="timer-stat-item">📈 ao12: <strong id="liveAO12">—</strong></div>
+      <div class="timer-stat-item">📝 练习次数: <strong id="liveTotal">0</strong></div>
+    </div>
+
     <div class="inspect-option">
       <label class="inspect-label">
         <input type="checkbox" id="inspectCheck" onchange="toggleInspection()">
@@ -149,8 +156,8 @@
   <div id="timerTab2" class="timer-content hidden fade-in">
     <div class="timer-stats" id="timerStats">
       <div class="timer-stat-item">🏆 最佳: <strong id="statBest">—</strong></div>
-      <div class="timer-stat-item">📊 ao5: <strong id="statAO5">—</strong></div>
-      <div class="timer-stat-item">📈 ao12: <strong id="statAO12">—</strong></div>
+      <div class="timer-stat-item">📊 最佳ao5: <strong id="statAO5">—</strong></div>
+      <div class="timer-stat-item">📈 最佳ao12: <strong id="statAO12">—</strong></div>
     </div>
 
     <div class="time-list-container">
