@@ -972,6 +972,24 @@ function updateTimerStats() {
   ao12El.textContent = formatAO(computeBestAO(timerRecords, 12));
 }
 
+/** 计算第 i 条记录（0=最新）当时的滚动 aoN（用 i..i+N-1） */
+function computeAOAt(records, i, n) {
+  if (records.length - i < n) return null;
+  var times = records.slice(i, i + n).map(function(r) { return getEffectiveTime(r); });
+  var dnfCount = times.filter(function(t) { return t === Infinity; }).length;
+  if (dnfCount >= 2) return null;
+  var sorted = times.slice().sort(function(a, b) { return a - b; });
+  var sum = sorted.slice(1, -1).reduce(function(a, b) { return a + b; }, 0);
+  return Math.round(sum / (n - 2));
+}
+
+function deleteTimeRecord(index) {
+  timerRecords.splice(index, 1);
+  saveTimerRecords();
+  updateTimerStats();
+  updateTimeList();
+}
+
 function updateTimeList() {
   var tbody = document.getElementById("timeList");
   var noTimes = document.getElementById("noTimes");
@@ -998,10 +1016,22 @@ function updateTimeList() {
     } else {
       display = formatTime(eff);
     }
+    var ao5 = computeAOAt(timerRecords, i, 5);
+    var ao12 = computeAOAt(timerRecords, i, 12);
+    var ao5Html = formatAO(ao5);
+    var ao12Html = formatAO(ao12);
+    // Highlight ao's that match the best historical value
+    var bestAO5 = computeBestAO(timerRecords, 5);
+    var bestAO12 = computeBestAO(timerRecords, 12);
+    var ao5Class = (ao5 === bestAO5 && ao5 !== null) ? 'ao-best' : '';
+    var ao12Class = (ao12 === bestAO12 && ao12 !== null) ? 'ao-best' : '';
     return '<tr class="' + (isBest ? 'best-row' : '') + '">' +
       '<td>' + (i + 1) + '</td>' +
       '<td>' + display + '</td>' +
+      '<td class="' + ao5Class + '">' + ao5Html + '</td>' +
+      '<td class="' + ao12Class + '">' + ao12Html + '</td>' +
       '<td title="' + r.scramble + '">' + r.scramble + '</td>' +
+      '<td><button class="btn-delete-time" onclick="deleteTimeRecord(' + i + ')" title="删除此记录">✕</button></td>' +
       '</tr>';
   }).join("");
 }
