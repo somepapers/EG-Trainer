@@ -1183,6 +1183,26 @@ function deleteTimeRecord(index) {
   updateTimeList();
 }
 
+function copyTimerScramble(index) {
+  var s = timerRecords[index].scramble;
+  navigator.clipboard.writeText(s).then(function() {
+    // 找到被点击的按钮并给反馈
+    var btns = document.querySelectorAll('.btn-copy-scramble');
+    var btn = btns[index];
+    if (btn) {
+      var original = btn.textContent;
+      btn.textContent = '✓';
+      btn.style.color = '#3fb950';
+      btn.style.borderColor = '#3fb950';
+      setTimeout(function() {
+        btn.textContent = original;
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }, 1200);
+    }
+  }).catch(function() {});
+}
+
 function updateTimeList() {
   var tbody = document.getElementById("timeList");
   var noTimes = document.getElementById("noTimes");
@@ -1223,7 +1243,7 @@ function updateTimeList() {
       '<td>' + display + '</td>' +
       '<td class="' + ao5Class + '">' + ao5Html + '</td>' +
       '<td class="' + ao12Class + '">' + ao12Html + '</td>' +
-      '<td title="' + r.scramble + '">' + r.scramble + '</td>' +
+      '<td><div class="scramble-cell"><span class="scramble-text" title="' + r.scramble + '">' + r.scramble + '</span><button class="btn-copy-scramble" onclick="copyTimerScramble(' + i + ')" title="复制打乱">📋</button></div></td>' +
       '<td><button class="btn-delete-time" onclick="deleteTimeRecord(' + i + ')" title="删除此记录">✕</button></td>' +
       '</tr>';
   }).join("");

@@ -658,10 +658,43 @@ tr:hover td { background: #161b22; }
 
 /* === Time Table column overflow === */
 .time-table td:nth-child(5) {
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 280px;
+  word-break: break-all;
+  white-space: normal;
+  line-height: 1.5;
+}
+
+.scramble-cell {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.scramble-text {
+  flex: 1;
+  word-break: break-all;
+  white-space: normal;
+}
+
+.btn-copy-scramble {
+  background: #21262d;
+  border: 1px solid #30363d;
+  color: #8b949e;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.15s;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.btn-copy-scramble:hover {
+  color: #fff;
+  border-color: #58a6ff;
+  background: #1f6feb44;
+}
+.btn-copy-scramble:active {
+  transform: scale(0.95);
 }
 
 .time-table td:nth-child(4) {
